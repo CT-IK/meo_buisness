@@ -1,2 +1,36 @@
-{"1": {"tg_id": "1068689003","role": "admin","name": "YURA","round_turn": "", "balance": "70000","gold": "1","silver": "2","platinum": "0", "palladium": "0","cuprum": "0","lithium": "0","cobalt": "0", "rare_metals": "0","iron": "0","aluminium": "0"},
-"2": {"tg_id": "1059608033","role": "admin","name": "HEY","round_turn": "", "balance": "","gold": "","silver": "","platinum": "", "palladium": "","cuprum": "","lithium": "","cobalt": "", "rare_metals": "","iron": "","aluminium": ""}}
+{
+    "1": {
+        "tg_id": "1068689003",
+        "role": "admin",
+        "name": "YURA",
+        "round_turn": 1,
+        "balance": 70000,
+        "gold": "1",
+        "silver": "2",
+        "platinum": "0",
+        "palladium": "0",
+        "cuprum": "0",
+        "lithium": "0",
+        "cobalt": "0",
+        "rare_metals": "0",
+        "iron": "0",
+        "aluminium": "0"
+    },
+    "2": {
+        "tg_id": "1059608033",
+        "role": "admin",
+        "name": "HEY",
+        "round_turn": "0",
+        "balance": "",
+        "gold": "",
+        "silver": "",
+        "platinum": "",
+        "palladium": "",
+        "cuprum": "",
+        "lithium": "",
+        "cobalt": "",
+        "rare_metals": "",
+        "iron": "",
+        "aluminium": ""
+    }
+}
