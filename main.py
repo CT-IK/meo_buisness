@@ -1,5 +1,5 @@
 import asyncio, logging, json, random
-from aiogram import F, Bot, Dispatcher
+from aiogram import F, Bot, Dispatcher, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
@@ -10,6 +10,7 @@ from credentials import bot_token
 
 bot = Bot(token=bot_token)
 dp = Dispatcher()
+router = Router()
 
 class AdminMessage(StatesGroup):
     admin_id = State()
@@ -91,19 +92,20 @@ async def start_cmd(message: Message):
 
             #todo сделать replykeyboard. Начать игру - зеленым
             admin_panel = InlineKeyboardBuilder()
-            admin_panel.button(text="Начать игру!", callback_data="start")
+            admin_panel.button(text="Начать игру!", callback_data="start", style="success")
             admin_panel.button(text="Статистика", callback_data=f"stat_{message.from_user.id}")
             admin_panel.button(text="Организаторы", callback_data=f"orgs_{message.from_user.id}")
             admin_panel.button(text="Отправить сообщение", callback_data=f"mes_{message.from_user.id}")
             admin_panel.adjust(1,2,1,1)
 
+
             await message.answer(f"Добро пожаловать, {name}!", reply_markup=admin_panel.as_markup())
         else:
-            # todo сделать replykeyboard. ГОТОВО - зеленым (удалять кнопку при использовании)
+            #todo сделать replykeyboard. ГОТОВО - зеленым (удалять кнопку при использовании)
             ready = InlineKeyboardBuilder()
             ready.button(text="Состояние портфеля", callback_data=f"finance_{name}_1")
             ready.button(text="Техподдержка", callback_data=f"help_{name}")
-            ready.button(text="ГОТОВ!", callback_data=f"user_ready_{name}")
+            ready.button(text="ГОТОВ!", callback_data=f"user_ready_{name}", style="success")
             ready.adjust(2,1)
 
             await message.answer(f"Добро пожаловать, команда {name}!\n\nНажмите ГОТОВ, если ваша команда готова к игре", reply_markup=ready.as_markup())
@@ -193,7 +195,7 @@ async def get_name(message: Message, state: FSMContext):
             ready = InlineKeyboardBuilder()
             ready.button(text="Состояние портфеля", callback_data=f"finance_{name}_1")
             ready.button(text="Техподдержка", callback_data=f"help_{name}")
-            ready.button(text="ГОТОВ!", callback_data=f"user_ready_{name}")
+            ready.button(text="ГОТОВ!", callback_data=f"user_ready_{name}", style="success")
             ready.adjust(2,1)
 
             await bot.send_message(chat_id=id, text="Поздравляю с успешной регистрацией!\n\nНажмите ГОТОВ, если ваша команда готова к игре", reply_markup=ready.as_markup())
@@ -237,7 +239,7 @@ async def start(callback: CallbackQuery):
             admin_panel_game.button(text="Статистика", callback_data=f"stat_{callback.from_user.id}")
             admin_panel_game.button(text="Организаторы", callback_data=f"orgs_{callback.from_user.id}")
             admin_panel_game.button(text="Отправить сообщение", callback_data=f"mes_{callback.from_user.id}")
-            admin_panel_game.button(text="Завершить раунд", callback_data="admin_end_round")
+            admin_panel_game.button(text="Завершить раунд", callback_data="admin_end_round", style="danger")
             admin_panel_game.adjust(2, 1, 1)
 
             await bot.send_message(chat_id=identificator, text="Игра началась. Нужно дать код игрокам", reply_markup=admin_panel_game.as_markup())
@@ -292,7 +294,7 @@ async def round(callback: CallbackQuery, state: FSMContext):
 @dp.message(Password.passwd)
 async def password_check(message: Message, state: FSMContext):
     #todo поменять пароли на более сложные
-    password_list = [12345, 23451, 34512, 45123, 51234]
+    password_list = ["market26", "round62", "trA2de6", "pr6ofITe2", "F1na1"]
     data = await state.get_data()
     user_id = data.get("id")
     turn = data.get("turn")
@@ -326,7 +328,7 @@ async def password_check(message: Message, state: FSMContext):
         gamer.button(text="Рынок", callback_data=f"stock_{turn}")
         gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
         gamer.button(text="Техподдержка", callback_data=f"help_{name}")
-        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}")
+        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
         gamer.adjust(2,2,1,1)
 
         await bot.send_message(chat_id=user_id, text=f"Добро пожаловать в {turn} раунд!\n\nHappy Hunger Games! And may the odds be ever in your favor", reply_markup=gamer.as_markup())
@@ -353,8 +355,8 @@ async def user_end(callback: CallbackQuery):
 
     #todo сделать Да - зеленым, а Нет - красным
     approve = InlineKeyboardBuilder()
-    approve.button(text="Да", callback_data=f"user_end_prov_{name}_{turn}")
-    approve.button(text="Нет", callback_data=f"user_end_decl_{name}_{turn}")
+    approve.button(text="Да", callback_data=f"user_end_prov_{name}_{turn}", style="success")
+    approve.button(text="Нет", callback_data=f"user_end_decl_{name}_{turn}", style="danger")
     await bot.send_message(chat_id=callback.from_user.id, text="Вы уверены, что хотите завершить раунд? Вы перейдете в окно ожидания, а операции в этом раунде будут невозможны", reply_markup=approve.as_markup())
 
 @dp.callback_query(F.data[:14] == "user_end_prov_")
@@ -379,7 +381,7 @@ async def user_end_decl(callback: CallbackQuery):
     gamer.button(text="Рынок", callback_data=f"stock_{turn}")
     gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
     gamer.button(text="Техподдержка", callback_data=f"help_{name}")
-    gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}")
+    gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
     gamer.adjust(2, 2, 1, 1)
 
     await bot.send_message(chat_id=callback.from_user.id, text="Завершение раунда отменено!", reply_markup=gamer.as_markup())
@@ -411,7 +413,7 @@ async def admin_end(callback: CallbackQuery):
                 admin_panel_game.button(text="Статистика", callback_data=f"stat_{callback.from_user.id}")
                 admin_panel_game.button(text="Организаторы", callback_data=f"orgs_{callback.from_user.id}")
                 admin_panel_game.button(text="Отправить сообщение", callback_data=f"mes_{callback.from_user.id}")
-                admin_panel_game.button(text="Завершить раунд", callback_data="admin_end_round")
+                admin_panel_game.button(text="Завершить раунд", callback_data="admin_end_round", style="danger")
                 admin_panel_game.adjust(2, 1, 1)
 
                 await bot.send_message(chat_id=identificator, text="Начинаем следующий раунд. Нужно дать код игрокам",
@@ -796,9 +798,9 @@ async def stock(callback: CallbackQuery):
 
     for i in range(len(round_info)):
         #todo сделать форматирование, как то, что я присылал
-        text += f"{i+1}. {list(round_info.keys())[i]}: Купля: {list(round_info.values())[i]['Купля']}, Продажа: {list(round_info.values())[i]['Продажа']}\n"
+        text += f"<b>{i+1}. {list(round_info.keys())[i]}:</b> <u>Купля:</u> {list(round_info.values())[i]['Купля']}, <u>Продажа:</u> {list(round_info.values())[i]['Продажа']}\n"
 
-    await bot.send_message(chat_id=callback.from_user.id, text=text)
+    await bot.send_message(chat_id=callback.from_user.id, text=text, parse_mode = "HTML")
 
 @dp.callback_query(F.data[:11] == "user_ready_")
 async def ready(callback: CallbackQuery):
