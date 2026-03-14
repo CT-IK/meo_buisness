@@ -16,21 +16,21 @@
         "iron": "0",
         "aluminium": "0"
     },
-    "2": {
-        "tg_id": "1059608033",
-        "role": "admin",
-        "name": "HEY",
-        "round_turn": "0",
-        "balance": "",
-        "gold": "",
-        "silver": "",
-        "platinum": "",
-        "palladium": "",
-        "cuprum": "",
-        "lithium": "",
-        "cobalt": "",
-        "rare_metals": "",
-        "iron": "",
-        "aluminium": ""
+    "27": {
+        "tg_id": "1059608032",
+        "role": "team",
+        "name": "test",
+        "round_turn": 5,
+        "balance": 3960,
+        "gold": 0,
+        "silver": 0,
+        "platinum": 0,
+        "palladium": 1,
+        "cuprum": 0,
+        "lithium": 0,
+        "cobalt": "1",
+        "rare_metals": 0,
+        "iron": 0,
+        "aluminium": 1
     }
 }
