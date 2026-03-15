@@ -69,6 +69,7 @@ def take_round_info(turn):
         with open('round_stock/round5.json', 'r', encoding='utf-8') as rf:
             round_info = json.load(rf)
         rf.close()
+    print(round_info)
     return round_info
 
 @dp.message(Command("start"))
@@ -90,7 +91,6 @@ async def start_cmd(message: Message):
     if isuser:
         if role == "admin":
 
-            #todo сделать replykeyboard. Начать игру - зеленым
             admin_panel = InlineKeyboardBuilder()
             admin_panel.button(text="Начать игру!", callback_data="start", style="success")
             admin_panel.button(text="Статистика", callback_data=f"stat_{message.from_user.id}")
@@ -101,7 +101,6 @@ async def start_cmd(message: Message):
 
             await message.answer(f"Добро пожаловать, {name}!", reply_markup=admin_panel.as_markup())
         else:
-            #todo сделать replykeyboard. ГОТОВО - зеленым (удалять кнопку при использовании)
             ready = InlineKeyboardBuilder()
             ready.button(text="Состояние портфеля", callback_data=f"finance_{name}_1")
             ready.button(text="Техподдержка", callback_data=f"help_{name}")
@@ -234,7 +233,6 @@ async def start(callback: CallbackQuery):
     for i in range(len(data)):
         if list(data.values())[i]['role'] == "admin":
             identificator = list(data.values())[i]['tg_id']
-            #todo ReplyKeyboard Завершить раунд - красным
             admin_panel_game = InlineKeyboardBuilder()
             admin_panel_game.button(text="Статистика", callback_data=f"stat_{callback.from_user.id}")
             admin_panel_game.button(text="Организаторы", callback_data=f"orgs_{callback.from_user.id}")
@@ -276,13 +274,11 @@ async def round(callback: CallbackQuery, state: FSMContext):
             if list(data.values())[i]['role'] == "team":
                 ident = list(data.values())[i]['tg_id']
                 name = list(data.values())[i]['name']
-
-                #todo ReplyKeyboard
                 finish = InlineKeyboardBuilder()
                 finish.button(text="Просмотреть свои результаты", callback_data=f"finance_{name}_5")
 
-                await bot.send_message(chat_id=ident,
-                                       text="Администратор запускает игру! Нажимай Ввести код и вводи код от ведущего",
+                await callback.message.edit_text(
+                                       text="Игра завершена! Спасибо огромное, за ваше участие!",
                                        reply_markup=finish.as_markup())
     else:
         await callback.answer()
@@ -293,12 +289,11 @@ async def round(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(Password.passwd)
 async def password_check(message: Message, state: FSMContext):
-    #todo поменять пароли на более сложные
     password_list = ["market26", "round62", "trA2de6", "pr6ofITe2", "F1na1"]
     data = await state.get_data()
     user_id = data.get("id")
     turn = data.get("turn")
-    user_password = int(message.text)
+    user_password = str(message.text)
 
     check_password = password_list[turn - 1]
 
@@ -321,7 +316,6 @@ async def password_check(message: Message, state: FSMContext):
         with open('data.json', 'w', encoding='utf-8') as wf:
                 json.dump(data, wf, ensure_ascii=False, indent=4)
 
-        # todo ReplyKeyboard Завершить раунд - красным
         gamer = InlineKeyboardBuilder()
         gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
         gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
@@ -331,7 +325,7 @@ async def password_check(message: Message, state: FSMContext):
         gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
         gamer.adjust(2,2,1,1)
 
-        await bot.send_message(chat_id=user_id, text=f"Добро пожаловать в {turn} раунд!\n\nHappy Hunger Games! And may the odds be ever in your favor", reply_markup=gamer.as_markup())
+        await bot.send_message(chat_id=user_id, text=f"Добро пожаловать в {turn} раунд!\n\nВремя идет, скорее делайте свой выбор! Помните, в рамках раунда вы можете совершить только 1 торговую операцию.\nУдачи!", reply_markup=gamer.as_markup())
         await state.clear()
 
     else:
@@ -353,11 +347,11 @@ async def user_end(callback: CallbackQuery):
     name = callback_data[10:-2]
     turn = callback_data[-1]
 
-    #todo сделать Да - зеленым, а Нет - красным
     approve = InlineKeyboardBuilder()
     approve.button(text="Да", callback_data=f"user_end_prov_{name}_{turn}", style="success")
     approve.button(text="Нет", callback_data=f"user_end_decl_{name}_{turn}", style="danger")
-    await bot.send_message(chat_id=callback.from_user.id, text="Вы уверены, что хотите завершить раунд? Вы перейдете в окно ожидания, а операции в этом раунде будут невозможны", reply_markup=approve.as_markup())
+    await callback.message.edit_text(text="Вы уверены, что хотите завершить раунд? Вы перейдете в окно ожидания, а операции в этом раунде будут невозможны", reply_markup=approve.as_markup())
+    await callback.answer()
 
 @dp.callback_query(F.data[:14] == "user_end_prov_")
 async def user_end_prov(callback: CallbackQuery):
@@ -365,8 +359,9 @@ async def user_end_prov(callback: CallbackQuery):
     name = callback_data[14:-2]
     turn = callback_data[-1]
 
-    await bot.send_message(chat_id=callback.from_user.id, text="Ожидайте начала следующего раунда")
-    await bot.send_message(chat_id=1068689003, text=f"Команда {name} завершила {turn} раунд")
+    await callback.message.edit_text(text="Ожидайте начала следующего раунда", reply_markup=None)
+    await callback.answer()
+    await bot.send_message(chat_id=627869054, text=f"Команда {name} завершила {turn} раунд")
 
 @dp.callback_query(F.data[:14] == "user_end_decl_")
 async def user_end_decl(callback: CallbackQuery):
@@ -374,7 +369,6 @@ async def user_end_decl(callback: CallbackQuery):
     name = callback_data[14:-2]
     turn = callback_data[-1]
 
-    #todo всё тоже самое, что и с обычной клавиатурой пользователя
     gamer = InlineKeyboardBuilder()
     gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
     gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
@@ -384,7 +378,8 @@ async def user_end_decl(callback: CallbackQuery):
     gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
     gamer.adjust(2, 2, 1, 1)
 
-    await bot.send_message(chat_id=callback.from_user.id, text="Завершение раунда отменено!", reply_markup=gamer.as_markup())
+    await callback.message.edit_text(text="Завершение раунда отменено!", reply_markup=gamer.as_markup())
+    await callback.answer()
 
 @dp.callback_query(F.data[:15] == "admin_end_round")
 async def admin_end(callback: CallbackQuery):
@@ -395,7 +390,7 @@ async def admin_end(callback: CallbackQuery):
         rf.close()
 
         approve = InlineKeyboardBuilder()
-        approve.button(text="Ввести код для следующего раунда", callback_data="round_start")
+        approve.button(text="Перейти далее", callback_data="round_start")
 
         for i in range(len(data)):
             if list(data.values())[i]['role'] == "team":
@@ -408,7 +403,6 @@ async def admin_end(callback: CallbackQuery):
         for i in range(len(data)):
             if list(data.values())[i]['role'] == "admin":
                 identificator = list(data.values())[i]['tg_id']
-                # todo всё тоже самое, что и с обычной клавиатурой админа
                 admin_panel_game = InlineKeyboardBuilder()
                 admin_panel_game.button(text="Статистика", callback_data=f"stat_{callback.from_user.id}")
                 admin_panel_game.button(text="Организаторы", callback_data=f"orgs_{callback.from_user.id}")
@@ -441,7 +435,7 @@ async def buy_process(callback: CallbackQuery):
         buy_metalls.button(text="Железная руда", callback_data=f"metall_8_{name}_{turn}")
         buy_metalls.button(text="Алюминий", callback_data=f"metall_9_{name}_{turn}")
         buy_metalls.adjust(3,3,1,1,2)
-        await bot.send_message(chat_id=callback.from_user.id, text="Выберите актив, который вы хотите купить", reply_markup=buy_metalls.as_markup())
+        await callback.message.edit_text(text="Выберите актив, который вы хотите купить", reply_markup=buy_metalls.as_markup())
 
     except Exception as e:
         print(e)
@@ -490,8 +484,19 @@ async def buy(message: Message, state: FSMContext):
 
         buy_price = int(amount) * int(metal_cost)
 
+        gamer = InlineKeyboardBuilder()
+        gamer.button(text="Рынок", callback_data=f"stock_{turn}")
+        gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
+        gamer.button(text="Техподдержка", callback_data=f"help_{name}")
+        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
+
         if balance < buy_price:
+            gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
+            gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
+            gamer.adjust(2, 2, 1, 1)
+
             await bot.send_message(chat_id=tg_id, text=f"К сожалению, вам не хватает {buy_price - balance} олимпов для покупки.\n\n Ваш текущий баланс: {balance} олимпов")
+            await bot.send_message(chat_id=tg_id, reply_markup = gamer.as_markup())
 
         else:
             balance = balance - buy_price
@@ -520,7 +525,6 @@ async def buy(message: Message, state: FSMContext):
 
             total_balance = balance + sum([x * y for x, y in zip(metal_amount, metal_cost)])
 
-            # todo сделать replykeyboard новое БЕЗ продажи/купли
             await bot.send_message(chat_id=tg_id,
                                    text=f"Транзакция завершена успешно!\n"
                                         f"Состояние портфеля команды {name}:\n\n"
@@ -536,8 +540,8 @@ async def buy(message: Message, state: FSMContext):
                                         f"Редкоземельные металлы: {metal_amount[7]} шт.\n"
                                         f"Железная руда: {metal_amount[8]} шт.\n"
                                         f"Алюминий: {metal_amount[9]} шт.\n")
-
-
+            gamer.adjust(2, 1, 1)
+            await bot.send_message(chat_id=tg_id, text="На текущий раунд у вас завершены все транзакции!", reply_markup=gamer.as_markup())
             for k, v in data.items():
                 if str(v.get('tg_id')) == str(tg_id):
                     v['balance'] = int(balance)
@@ -610,7 +614,7 @@ async def sell_process(callback: CallbackQuery, state: FSMContext):
                 sell_metalls.button(text="Алюминий", callback_data=f"sellamount_9_{name}_{turn}")
 
         await state.update_data(dictmet=dict_of_metals)
-        await bot.send_message(chat_id=callback.from_user.id, text="Выберите актив, который вы хотите продать",
+        await callback.message.edit_text(text="Выберите актив, который вы хотите продать",
                                reply_markup=sell_metalls.as_markup())
 
     except Exception as e:
@@ -658,9 +662,20 @@ async def sell(message: Message, state: FSMContext):
                 tg_id = int(list(data.values())[i]['tg_id'])
                 balance = int(list(data.values())[i]['balance'])
 
+        gamer = InlineKeyboardBuilder()
+        gamer.button(text="Рынок", callback_data=f"stock_{turn}")
+        gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
+        gamer.button(text="Техподдержка", callback_data=f"help_{name}")
+        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
+
         if int(user_amount) < int(amount):
-            await bot.send_message(chat_id=tg_id,
-                                   text=f"К сожалению, вы не можете продать {amount} шт. активов.\n\n Ваш текущий баланс: {user_amount} шт.")
+
+            gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
+            gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
+            gamer.adjust(2, 2, 1, 1)
+
+            await bot.send_message(chat_id=tg_id, text=f"К сожалению, вы не можете продать {amount} шт. активов.\n\n Ваш текущий баланс: {user_amount} шт.")
+            await bot.send_message(chat_id=tg_id, reply_markup=gamer.as_markup())
 
         else:
 
@@ -698,8 +713,6 @@ async def sell(message: Message, state: FSMContext):
                 metal_cost_list.append(int(list(round_info.values())[i]['Продажа']))
 
             total_balance = balance + sum([x * y for x, y in zip(metal_amount, metal_cost_list)])
-            print(metal_amount)
-            #todo сделать replykeyboard новое БЕЗ продажи/купли
             await bot.send_message(chat_id=tg_id,
                                    text=f"Транзакция завершена успешно!\n"
                                         f"Состояние портфеля команды {name}:\n\n"
@@ -716,6 +729,8 @@ async def sell(message: Message, state: FSMContext):
                                         f"Железная руда: {metal_amount[8]} шт.\n"
                                         f"Алюминий: {metal_amount[9]} шт.\n")
 
+            gamer.adjust(2, 1, 1)
+            await bot.send_message(chat_id=tg_id, text="На текущий раунд у вас завершены все транзакции!", reply_markup=gamer.as_markup())
 
             for k, v in data.items():
                 if str(v.get('tg_id')) == str(tg_id):
@@ -797,8 +812,7 @@ async def stock(callback: CallbackQuery):
     text = f"Состояние рынка на {turn} раунд:\n"
 
     for i in range(len(round_info)):
-        #todo сделать форматирование, как то, что я присылал
-        text += f"<b>{i+1}. {list(round_info.keys())[i]}:</b> <u>Купля:</u> {list(round_info.values())[i]['Купля']}, <u>Продажа:</u> {list(round_info.values())[i]['Продажа']}\n"
+        text += f"<b>{i+1}. {list(round_info.keys())[i]}:\n</b> <u>Купля:</u> {list(round_info.values())[i]['Купля']}, <u>Продажа:</u> {list(round_info.values())[i]['Продажа']}\n"
 
     await bot.send_message(chat_id=callback.from_user.id, text=text, parse_mode = "HTML")
 
@@ -822,54 +836,62 @@ async def ready(callback: CallbackQuery):
 
 @dp.callback_query(F.data[:5] == "stat_")
 async def stat(callback: CallbackQuery):
-    callback_data = str(callback.data)
-    id = callback_data[5:]
-    with open('data.json', 'r', encoding='utf-8') as rf:
-        data = json.load(rf)
-    rf.close()
+    try:
+        callback_data = str(callback.data)
+        id = callback_data[5:]
+        with open('data.json', 'r', encoding='utf-8') as rf:
+            data = json.load(rf)
+        rf.close()
 
-    turn = 0
-    for i in range(len(data)):
-        if list(data.values())[i]['role'] == "team":
-            turn = list(data.values())[i]['turn']
-            if turn == 0:
-                turn = 1
-            break
+        turn = 0
+        print(1)
+        for i in range(len(data)):
+            print(list(data.values())[i]['role'])
+            if str(list(data.values())[i]['role']) == "team":
+                turn = int(list(data.values())[i]['round_turn'])
+                if turn == 0:
+                    turn = 1
+                break
 
-    print(turn)
-    round_info = take_round_info(turn)
+        round_info = take_round_info(str(turn))
+        print(round_info)
 
-    metal_cost = []
-    for i in range(len(round_info)):
-        metal_cost.append(int(list(round_info.values())[i]['Продажа']))
+        metal_cost = []
+        for i in range(len(round_info)):
+            print("e")
+            metal_cost.append(int(list(round_info.values())[i]['Продажа']))
 
-    for i in range(len(data)):
-        if list(data.values())[i]['role'] == "team":
-            metal_amount = []
-            metal_amount += [int(list(data.values())[i]['gold']),
-                             int(list(data.values())[i]['silver']),
-                             int(list(data.values())[i]['platinum']),
-                             int(list(data.values())[i]['palladium']),
-                             int(list(data.values())[i]['cuprum']),
-                             int(list(data.values())[i]['lithium']),
-                             int(list(data.values())[i]['cobalt']),
-                             int(list(data.values())[i]['rare_metals']),
-                             int(list(data.values())[i]['iron']),
-                             int(list(data.values())[i]['aluminium'])]
-
-            await bot.send_message(chat_id=id, text=f"Команда: {list(data.values())[i]['name']}\n"
-                                                    f"Олимпкоины: {list(data.values())[i]['balance']}\n"
-                                                    f"Общий баланс:{int(list(data.values())[i]['balance']) + sum([x * y for x, y in zip(metal_amount, metal_cost)])}"
-                                                    f"Золото: {list(data.values())[i]['gold']}\n"
-                                                    f"Серебро: {list(data.values())[i]['silver']}\n"
-                                                    f"Платина: {list(data.values())[i]['platinum']}\n"
-                                                    f"Палладий: {list(data.values())[i]['palladium']}\n"
-                                                    f"Медь: {list(data.values())[i]['cuprum']}\n"
-                                                    f"Литий: {list(data.values())[i]['lithium']}\n"
-                                                    f"Кобальт: {list(data.values())[i]['cobalt']}\n"
-                                                    f"Редкоземельные металлы: {list(data.values())[i]['rare_metals']}\n"
-                                                    f"Железная руда: {list(data.values())[i]['iron']}\n"
-                                                    f"Алюминий: {list(data.values())[i]['aluminium']}\n")
+        for i in range(len(data)):
+            if list(data.values())[i]['role'] == "team":
+                print("a")
+                metal_amount = []
+                metal_amount += [int(list(data.values())[i]['gold']),
+                                 int(list(data.values())[i]['silver']),
+                                 int(list(data.values())[i]['platinum']),
+                                 int(list(data.values())[i]['palladium']),
+                                 int(list(data.values())[i]['cuprum']),
+                                 int(list(data.values())[i]['lithium']),
+                                 int(list(data.values())[i]['cobalt']),
+                                 int(list(data.values())[i]['rare_metals']),
+                                 int(list(data.values())[i]['iron']),
+                                 int(list(data.values())[i]['aluminium'])]
+                print(metal_amount)
+                total_balance = int(list(data.values())[i]['balance']) + sum([x * y for x, y in zip(metal_amount, metal_cost)])
+                await bot.send_message(chat_id=id, text=f"Команда: {list(data.values())[i]['name']}\n"
+                                                        f"Олимпкоины: {list(data.values())[i]['balance']}\n"
+                                                        f"Общий баланс:{total_balance}\n"
+                                                        f"Золото: {list(data.values())[i]['gold']}\n"
+                                                        f"Серебро: {list(data.values())[i]['silver']}\n"
+                                                        f"Платина: {list(data.values())[i]['platinum']}\n"
+                                                        f"Палладий: {list(data.values())[i]['palladium']}\n"
+                                                        f"Медь: {list(data.values())[i]['cuprum']}\n"
+                                                        f"Литий: {list(data.values())[i]['lithium']}\n"
+                                                        f"Кобальт: {list(data.values())[i]['cobalt']}\n"
+                                                        f"Редкоземельные металлы: {list(data.values())[i]['rare_metals']}\n"
+                                                        f"Железная руда: {list(data.values())[i]['iron']}\n"
+                                                        f"Алюминий: {list(data.values())[i]['aluminium']}\n")
+    except Exception as e:
+        print(e)
 
 @dp.callback_query(F.data[:5] == "orgs_")
 async def orgs(callback: CallbackQuery):
@@ -990,7 +1012,7 @@ async def help_send(message: Message, state: FSMContext):
         id = data.get("team_id")
         user_text = message.text
 
-        await bot.send_message(chat_id=1068689003, text=f"Сообщение от команды {name}: {user_text}")
+        await bot.send_message(chat_id=627869054, text=f"Сообщение от команды {name}: {user_text}")
         await state.clear()
         await bot.send_message(chat_id=id, text="Сообщение было успешно доставлено администратору!")
     except Exception as e:
