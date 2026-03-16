@@ -69,7 +69,6 @@ def take_round_info(turn):
         with open('round_stock/round5.json', 'r', encoding='utf-8') as rf:
             round_info = json.load(rf)
         rf.close()
-    print(round_info)
     return round_info
 
 @dp.message(Command("start"))
@@ -84,7 +83,6 @@ async def start_cmd(message: Message):
     for id, info in data.items():
         if str(info['tg_id']) == str(message.from_user.id):
             name = info['name']
-            print(name)
             role = info['role']
             isuser = True
 
@@ -124,7 +122,7 @@ async def registration(callback: CallbackQuery, state: FSMContext):
         await state.set_state(Registration.name)
 
     except Exception as e:
-        print(e)
+        print(f"Проблемы с регистрацией: {e}")
 
 
 @dp.message(Registration.name)
@@ -150,6 +148,7 @@ async def get_name(message: Message, state: FSMContext):
                 "role": "team",
                 "name": str(name),
                 "round_turn": "0",
+                "transact": "0",
                 "balance": "5000"
             }
             team_second_part = {
@@ -190,7 +189,6 @@ async def get_name(message: Message, state: FSMContext):
                 json.dump(data, wf)
             wf.close()
 
-            #todo тоже самое. Сделать ГОТОВ! зелёным
             ready = InlineKeyboardBuilder()
             ready.button(text="Состояние портфеля", callback_data=f"finance_{name}_1")
             ready.button(text="Техподдержка", callback_data=f"help_{name}")
@@ -309,6 +307,7 @@ async def password_check(message: Message, state: FSMContext):
                 if str(v.get('tg_id')) == str(user_id):
                     name = str(v.get('name'))
                     v['round_turn'] = int(turn)
+                    v['transact'] = '0'
                     break
         except Exception as e:
             print(e)
@@ -369,14 +368,33 @@ async def user_end_decl(callback: CallbackQuery):
     name = callback_data[14:-2]
     turn = callback_data[-1]
 
+    with open('data.json', 'r', encoding='utf-8') as rf:
+        data = json.load(rf)
+    rf.close()
+
+    flag = True
+    for i in range(len(data)):
+            if list(data.values())[i]['tg_id'] == str(callback.from_user.id):
+                if list(data.values())[i]['transact'] == "1":
+                    flag = False
+
     gamer = InlineKeyboardBuilder()
-    gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
-    gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
-    gamer.button(text="Рынок", callback_data=f"stock_{turn}")
-    gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
-    gamer.button(text="Техподдержка", callback_data=f"help_{name}")
-    gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
-    gamer.adjust(2, 2, 1, 1)
+
+    if flag:
+        gamer.button(text="Купить актив", callback_data=f"buy_{name}_{turn}")
+        gamer.button(text="Продать актив", callback_data=f"sell_{name}_{turn}")
+        gamer.button(text="Рынок", callback_data=f"stock_{turn}")
+        gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
+        gamer.button(text="Техподдержка", callback_data=f"help_{name}")
+        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
+        gamer.adjust(2, 2, 1, 1)
+
+    else:
+        gamer.button(text="Рынок", callback_data=f"stock_{turn}")
+        gamer.button(text="Состояние портфеля", callback_data=f"finance_{name}_{turn}")
+        gamer.button(text="Техподдержка", callback_data=f"help_{name}")
+        gamer.button(text="Завершить раунд", callback_data=f"end_round_{name}_{turn}", style="danger")
+        gamer.adjust(2, 1, 1)
 
     await callback.message.edit_text(text="Завершение раунда отменено!", reply_markup=gamer.as_markup())
     await callback.answer()
@@ -551,6 +569,7 @@ async def buy(message: Message, state: FSMContext):
                         if i == int(metall) + 5:
                            key = str(keys_list[i])
                     v[key] = str(metal_amount[int(metall)])
+                    v['transact'] = '1'
                     break
 
             with open('data.json', 'w', encoding='utf-8') as wf:
@@ -741,6 +760,7 @@ async def sell(message: Message, state: FSMContext):
                         if i == int(metall) + 5:
                            key = str(keys_list[i])
                     v[key] = str(metal_amount[int(metall)])
+                    v['transact'] = '1'
                     break
 
             with open('data.json', 'w', encoding='utf-8') as wf:
